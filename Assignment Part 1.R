@@ -152,6 +152,7 @@ test$Activity[grepl("wash",test$Activity,ignore.case = TRUE)]<-activityCategorie
 test$Activity[grepl("sit",test$Activity,ignore.case = TRUE)]<-activityCategories[20]
 test$Activity[grepl("shark",test$Activity,ignore.case = TRUE)]<-activityCategories[21]
 test$Activity[!(test$Activity %in% activityCategories) & test$Activity!=""]<-activityCategories[22]
+test$Activity[test$Activity==""]<-NA
 
 #Fix messy data in Time column
 getmode <- function(v) 
@@ -234,6 +235,47 @@ test$Time <- gsub("<","",test$Time)
 test$Time <- gsub(">","",test$Time)
 test$Time[grepl("11115",test$Time,ignore.case = T)] <- 1115 
 test$Time[grepl("13345",test$Time,ignore.case = T)] <- 1335
+
+#Impute mode to NA values in Month
+library(Hmisc)
+test$Month <- with(test, impute(Month, getmode(test$Month)))
+
+#Impute mode to NA values in Type
+test$Type[which(is.na(test$Type))] <- getmode(test$Type)
+
+#Impute mode to NA values in Gender
+test$Gender[which(is.na(test$Gender))] <- getmode(test$Gender)
+
+#country 
+test$Country[which(nchar(test$Country)<=1)] <-NA # we got 12 empty Country
+test$Country[grepl("\\?", test$Country)] <- NA # and 1 country with "?"
+
+#All these are to be removed
+test<-test[!is.na(test$Country),]
+o <- order(test$Country)
+
+#function to impute time, improve accuracy by ordering it with Country
+seqImpute <- function(x)
+{
+  last=getmode(testafternoon)
+  n <- length(x)
+  x <- c(x, last)
+  i <- is.na(x)
+  while (any(i))
+  {
+    x[i] <- x[which(i)+1]
+    i <- is.na(x)
+  }
+  x[1:n]
+}
+
+test$Time <-seqImpute(test$Time[o])
+
+
+#under testing
+getmode(na.omit(test$Time[test$Country=="VENEZUELA"]))
+any(duplicated(na.omit(test$Time[test$Country=="VENEZUELA"])))
+#tyl end
 
 
 ###Exploratory Analysis###
