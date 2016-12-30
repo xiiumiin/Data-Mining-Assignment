@@ -1,3 +1,4 @@
+#Set working directory
 setwd("C:/Users/User/Desktop/Foundation IT/Data Mining")
 shark_atk <- read.csv("attacks.csv",stringsAsFactors = FALSE)
 dim(shark_atk)
@@ -154,13 +155,15 @@ test$Activity[grepl("shark",test$Activity,ignore.case = TRUE)]<-activityCategori
 test$Activity[!(test$Activity %in% activityCategories) & test$Activity!=""]<-activityCategories[22]
 test$Activity[test$Activity==""]<-NA
 
+#Remove missing activity records
+test<-test[!is.na(test$Activity),]
+
 #Fix messy data in Time column
 getmode <- function(v) 
 {
   uniqv <- unique(v)
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
-testmorning <- testmorning[(testmorning >= 2000 & testtime <= 2359) | testtime <= 0559]
 testTime <- test$Time
 
 testmorning <- gsub("h","",testTime)
@@ -271,69 +274,83 @@ seqImpute <- function(x)
 
 test$Time <-seqImpute(test$Time[o])
 
-
-#under testing
-getmode(na.omit(test$Time[test$Country=="VENEZUELA"]))
-any(duplicated(na.omit(test$Time[test$Country=="VENEZUELA"])))
-#tyl end
-
-
 ###Exploratory Analysis###
-
+library(plyr)
 #1-Shark attacks over years
-plot(test$Year, type="o", col="blue")
+year = count(test, 'Year')
+yeargraph <- ggplot(data=year,aes(x=Year, y= freq)) +
+  geom_point() +
+  ggtitle("Shark Attack over the Years") +
+  scale_x_continuous(breaks=seq(1950, 2016, 5)) +
+  labs(x="Frequency",y="Years") + theme_dark()
+yeargraph
 
 #2-By injury type
-injury <- test[order(test$Injury,decreasing = TRUE),]
-injury.count = count(test, 'Activity')
-barplot(injury.count, las=2, horiz=TRUE, main="Global Shark Attacks by Types of Injury", 
-        xlab="Injury Type",names.arg=c("Fatal", "Injured", "No Injury"))
+injury = count(test, 'Injury')
+injury <- injury[with(injury, order(-freq)),]
+
+injury.graph<-ggplot(data=injury, aes(x=reorder(Injury,freq), y=freq, fill=Injury)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label=freq), hjust=1.2, size=4) +
+  ggtitle("Type of Injury")
+injury.graph + coord_flip()
 
 #3-Top 10 location where shark attacks occurred 
 library(RColorBrewer)
+install.packages("maptools")
 library(maptools)
-library(plyr)
-library(sqldf)
+
+data("wrld_simpl")
 country = count(test, 'Country')
 country <- country[with(country, order(-freq)),]
 country <- head(country,10)
+country
 
+#Convert country name to lowercase 
+lowerCase <- function(x) {
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1,1)), tolower(substring(s, 2)),
+        sep="", collapse=" ")
+}
+
+country$Country <- sapply(country$Country, lowerCase)
+country$Country[grepl("USA",country$Country,ignore.case = TRUE)]<-"United States"
+
+#Plot the map
 pal <- colorRampPalette(brewer.pal(9, 'Reds'))(length(country$freq))
 pal <- pal[with(country, findInterval(freq, sort(unique(freq))))]
 
-col <- rep(grey(0.8), length(wrld_simpl@data$NAME))
-col[match(ddf$Country, wrld_simpl@data$NAME)] <- pal
+col <- rep(grey(0.8), sum(length(wrld_simpl@data$NAME)))
+col[match(country$Country, wrld_simpl@data$NAME)] <- pal
 
-plot(wrld_simpl, col = col)
+plot(wrld_simpl, col = col, main = "Global Shark Attacks Location")
 
-#4-Top 10 triggering activities
+#4 top 10 triggering activities
 library(ggplot2)
 activity = count(test, 'Activity')
 activity <- activity[with(activity, order(-freq)),]
-activity <- head(activity,10)
-activity.count <- ggplot(data.frame(activity),aes(x=activity))
-barplot(activity, main="Global Shark Attacks by Types of Injury", 
-        xlab="Injury Type")
-barplot(summary(activity$Activity))
+activity <- head(activity,5)
 
-#to be tested
-newmap <- getMap(resolution = "low")
-plot(newmap, xlim = c(-20, 59), ylim = c(35, 71), asp = 1)
-points(airports$lon, airports$lat, col = "red", cex = .6)
+act.graph <-ggplot(data=activity, aes(x=reorder(Activity,freq), y=freq, fill=Activity)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label=freq), hjust=1.2, size=4) +
+  ggtitle("Top 10 Triggering Activities") +
+  labs(x="Activities",y="Frequency")
+act.graph + coord_flip()
 
-library(rworldmap)
-library(mapdata)
-library(maps)
+#5 Time of shark attacks occurred in a day
+time = count(test, 'Time')
+time$Time <- as.integer(time$Time)
+time.graph <-ggplot(data=time, aes(x=Time, y=freq)) +
+  geom_line() +
+  scale_x_continuous(breaks=seq(0, 2400, 200)) +
+  ggtitle("Time of Shark Attacks in a Day") +
+  labs(x="Time",y="Frequency")
+time.graph
 
+str(test) 
 
-
-write.csv(test,"test.csv")
-
-
-
-
-
-
+write.csv(test,"attack_final.csv")
 
 
 
