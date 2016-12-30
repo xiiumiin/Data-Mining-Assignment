@@ -296,17 +296,16 @@ test$Time <-seqImpute(test$Time[o])
 library(plyr)
 #1-Shark attacks over years
 year = count(test, 'Year')
-yeargraph <- ggplot(data=year,aes(x=Year, y= freq)) +
+year.graph <- ggplot(data=year,aes(x=Year, y= freq)) +
   geom_point() +
   ggtitle("Shark Attack over the Years") +
   scale_x_continuous(breaks=seq(1950, 2016, 5)) +
   labs(x="Frequency",y="Years") + theme_dark()
-yeargraph
+year.graph
 
 #2-By injury type
 injury = count(test, 'Injury')
 injury <- injury[with(injury, order(-freq)),]
-
 injury.graph<-ggplot(data=injury, aes(x=reorder(Injury,freq), y=freq, fill=Injury)) +
   geom_bar(stat="identity") +
   geom_text(aes(label=freq), hjust=1.2, size=4) +
@@ -316,12 +315,10 @@ injury.graph + coord_flip()
 #3-Top 10 location where shark attacks occurred 
 library(RColorBrewer)
 library(maptools)
-
 data("wrld_simpl")
 country = count(test, 'Country')
 country <- country[with(country, order(-freq)),]
 country <- head(country,10)
-country
 
 #Convert country name to lowercase 
 lowerCase <- function(x) {
