@@ -26,7 +26,7 @@ test$Species<-NULL
 test$Investigator.or.Source<-NULL
 
 #Rhange column name Sex to Gender
-colnames(test)[6]<-"Gender"
+colnames(test)[which(colnames(test)=="Sex")]<-"Gender"
 
 #Remove rows before 1951
 test<-test[test$Year > 1950,]
@@ -37,10 +37,28 @@ test$Year<-as.integer(test$Year)
 #Change 'Invalid' Type into NA
 test$Type[test$Type == 'Invalid']<-NA
 library(lubridate)
-test$Date<-format(dmy(test$Date), format = "%B")
+
+#Fix inconsistent Date data
+test$Date[grep("jan",test$Date,ignore.case=TRUE)] <-"January"
+test$Date[grep("feb",test$Date,ignore.case=TRUE)] <-"February"
+test$Date[grep("mar",test$Date,ignore.case=TRUE)] <-"March"
+test$Date[grep("apr",test$Date,ignore.case=TRUE)] <-"April"
+test$Date[grep("may",test$Date,ignore.case=TRUE)] <-"May"
+test$Date[grep("jun",test$Date,ignore.case=TRUE)] <-"June"
+test$Date[grep("jul",test$Date,ignore.case=TRUE)] <-"July"
+test$Date[grep("aug",test$Date,ignore.case=TRUE)] <-"August"
+test$Date[grep("sep",test$Date,ignore.case=TRUE)] <-"September"
+test$Date[grep("oct",test$Date,ignore.case=TRUE)] <-"October"
+test$Date[grep("nov",test$Date,ignore.case=TRUE)] <-"November"
+test$Date[grep("dec",test$Date,ignore.case=TRUE)] <-"December"
+
+months <- c("January","February","March","April","May","June","July","August","September",
+            "October","November","December")
+
+test$Date[!(test$Date %in% months)] <-NA
 
 #then change the column name to month
-colnames(test)[1]<-"Month"
+colnames(test)[which(colnames(test)=="Date")]<-"Month"
 
 #Remove unconfirmed and unwanted cases records
 test<-test[!grepl("Shark involvement",test$Injury,ignore.case=TRUE),]
@@ -71,14 +89,14 @@ activityCategories <- c("Diving","Bathing","Adrifting","Air/Sea Disaster",
                         "Sitting","Attempting to approach sharks","Others")
 
 test$Activity[grepl("dive",test$Activity,ignore.case = TRUE) | 
-              grepl("diving",test$Activity,ignore.case = TRUE) |
-              grepl("dive",test$Activity,ignore.case = TRUE) |
-              grepl("dive",test$Activity,ignore.case = TRUE) |
-              grepl("snorkel",test$Activity,ignore.case = TRUE)
+                grepl("diving",test$Activity,ignore.case = TRUE) |
+                grepl("dive",test$Activity,ignore.case = TRUE) |
+                grepl("dive",test$Activity,ignore.case = TRUE) |
+                grepl("snorkel",test$Activity,ignore.case = TRUE)
               ] <-activityCategories[1]
 
 test$Activity[grepl("bath",test$Activity,ignore.case = TRUE) |
-              grepl("batin",test$Activity,ignore.case = TRUE)
+                grepl("batin",test$Activity,ignore.case = TRUE)
               ] <-activityCategories[2]
 
 test$Activity[grepl("adrift",test$Activity,ignore.case = TRUE)] <-activityCategories[3]
@@ -124,9 +142,9 @@ test$Activity[grepl("surf",test$Activity,ignore.case = TRUE) |
               ]<-activityCategories[12]
 
 test$Activity[grepl("kayak",test$Activity,ignore.case = TRUE) |
-              grepl("paddle",test$Activity,ignore.case = TRUE) |
-              grepl("paddling",test$Activity,ignore.case = TRUE)|
-              grepl("rowing",test$Activity,ignore.case = TRUE) 
+                grepl("paddle",test$Activity,ignore.case = TRUE) |
+                grepl("paddling",test$Activity,ignore.case = TRUE)|
+                grepl("rowing",test$Activity,ignore.case = TRUE) 
               ]<-activityCategories[13]
 
 test$Activity[grepl("murder",test$Activity,ignore.case = TRUE)]<-activityCategories[14]
@@ -142,11 +160,11 @@ test$Activity[grepl("shipwreck",test$Activity,ignore.case = TRUE) |
               ]<-activityCategories[16]
 
 test$Activity[grepl("play",test$Activity,ignore.case = TRUE) |
-              grepl("splash",test$Activity,ignore.case = TRUE)
+                grepl("splash",test$Activity,ignore.case = TRUE)
               ]<-activityCategories[17]
 
 test$Activity[grepl("stand",test$Activity,ignore.case = TRUE) |
-              grepl("stamd",test$Activity,ignore.case = TRUE)
+                grepl("stamd",test$Activity,ignore.case = TRUE)
               ]<-activityCategories[18]
 
 test$Activity[grepl("wash",test$Activity,ignore.case = TRUE)]<-activityCategories[19]
@@ -219,7 +237,7 @@ test$Time[grepl("Sunset",test$Time,ignore.case = T)] <- 1900
 test$Time[grepl("30 minutes after 1992.07.08.a",test$Time,ignore.case = T)] <- getmode(testmorning)
 test$Time[grepl("2 hours after Opperman",test$Time,ignore.case = T)] <- getmode(testmorning)
 
-test$Time[test$Time=="  "] <- NA
+test$Time[test$Time=="  "] <- NA
 test$Time[test$Time=="--"] <- NA
 test$Time[test$Time=="X"] <- NA
 
@@ -297,7 +315,6 @@ injury.graph + coord_flip()
 
 #3-Top 10 location where shark attacks occurred 
 library(RColorBrewer)
-install.packages("maptools")
 library(maptools)
 
 data("wrld_simpl")
@@ -351,13 +368,5 @@ time.graph
 str(test) 
 
 write.csv(test,"attack_final.csv")
-
-
-
-
-
-
-
-
 
 
